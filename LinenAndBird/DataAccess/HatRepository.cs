@@ -4,37 +4,29 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
-
+using Dapper;
+using Microsoft.Extensions.Configuration;
 
 namespace LinenAndBird.DataAccess
 {
     public class HatRepository
     {
-        const string _connectionString = "Server = localhost; Database = LinenAndBird; Trusted_Connection = True;";
+        readonly string _connectionString;
+        public HatRepository(IConfiguration config)
+        {
+            _connectionString = config.GetConnectionString("LinenAndBird");
+        }
         internal Hat GetById(Guid hatId)
         {
-            using var connection = new SqlConnection(_connectionString);
-            //open the connection
-            connection.Open();
+            using var db = new SqlConnection(_connectionString);
 
-            //tell sql what we wnt to do
-            var command = connection.CreateCommand();
-            command.CommandText = @"select *
+            var sql = @"select *
                                     from Hats
                                      where id = @id";
 
-            command.Parameters.AddWithValue("id", hatId);
+            var hat = db.QueryFirstOrDefault<Hat>(sql, new { id = hatId });
 
-            var reader = command.ExecuteReader();
-
-            if (reader.Read())
-            {
-
-                return MapFromReader(reader);
-            }
-
-            return null;
-            //return _hats.FirstOrDefault(hat => hat.Id == hatId); //will either return matching hat or null
+            return hat;
         }
 
         internal Hat GetByStyle(HatStyle style)
@@ -159,7 +151,7 @@ namespace LinenAndBird.DataAccess
             var hat = new Hat();
             hat.Id = reader.GetGuid(0);
             hat.Color = reader["Color"].ToString();
-            hat.Designer = reader["Desi"].ToString();
+            hat.Designer = reader["Designer"].ToString();
             hat.Style = (HatStyle)reader["Style"];
     
             return hat;

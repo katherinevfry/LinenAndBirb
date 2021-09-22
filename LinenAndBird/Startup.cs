@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using LinenAndBird.DataAccess;
 
 namespace LinenAndBird
 {
@@ -26,6 +27,13 @@ namespace LinenAndBird
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //registering a service (I ADD THIS) dependency inversion principle
+            services.AddSingleton<IConfiguration>(Configuration); //any time someone asks for this thing, give them the same copy 4eva
+
+            //we need to register EVERY repo as transient. 
+            services.AddTransient<BirdRepository>(); //give them a NEW copy. this is the one that typically gets used for things that aren't connections
+            services.AddTransient<HatRepository>();
+            services.AddTransient<OrdersRepository>();
 
             services.AddControllers();
             services.AddSwaggerGen(c =>

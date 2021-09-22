@@ -4,39 +4,36 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
+using Dapper;
+using Microsoft.Extensions.Configuration;
 
 namespace LinenAndBird.DataAccess
 {
     public class BirdRepository
     {
-        const string _connectionString = "Server = localhost; Database = LinenAndBird; Trusted_Connection = True;";
-
+        readonly string _connectionString;
+        public BirdRepository(IConfiguration config)
+        {
+            _connectionString = config.GetConnectionString("LinenAndBird");
+        }
 
         internal IEnumerable<Bird> GetAll()
         {
-            //you must connect to database
 
-            using var connection = new SqlConnection(_connectionString);
-            //open the connection
-            connection.Open();
+            using var db = new SqlConnection(_connectionString);
 
-            //tell sql what we wnt to do
-            var command = connection.CreateCommand();
-            command.CommandText = @"select *
-                                    from Birds";
+            var birds = db.Query<Bird>(@"select * from Birds");
 
-            //execute reader is for when we care about getting all the query results
-            var reader = command.ExecuteReader();
+            var accessoriesQuery = @"select * from BirdAccessories";
 
-            //store the birds
-            var birds = new List<Bird>();
+            var accessories = db.Query<BirdAccessory>(accessoriesQuery);
 
-            //
-            while(reader.Read())
+            foreach (var bird in birds)
             {
-             var bird =  MapFromReader(reader);
-                birds.Add(bird);
+                bird.Accessories = accessories.Where(ac => ac.BirdId == bird.Id);
             }
+
+
 
             return birds;
 
@@ -44,106 +41,58 @@ namespace LinenAndBird.DataAccess
 
         internal void Remove(Guid id)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var db = new SqlConnection(_connectionString);
 
-            connection.Open();
+            var sql = @"Delete From Birds Where Id = @id";
 
-            var command = connection.CreateCommand();
-            command.CommandText = @"Delete From Birds Where Id = @id";
+            db.Execute(sql, new { id });
 
-            command.Parameters.AddWithValue("id", id);
-
-            command.ExecuteNonQuery();
         }
 
         internal Bird Update(Guid id, Bird bird)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var db = new SqlConnection(_connectionString);
 
-            connection.Open();
-
-            var command = connection.CreateCommand();
-            command.CommandText = @"update Birds Set
+            var sql = @"update Birds Set
                                      Color = @color, Name = @name, Type = @type, Size = @size
                                         output inserted.*
                                       Where id = @id";
 
-            command.Parameters.AddWithValue("Type", bird.Type);
-            command.Parameters.AddWithValue("Color", bird.Color);
-            command.Parameters.AddWithValue("Size", bird.Size);
-            command.Parameters.AddWithValue("Name", bird.Name);
-            command.Parameters.AddWithValue("id", bird.Id);
-
-            var reader = command.ExecuteReader();
-
-            if (reader.Read())
-            {
-
-                return MapFromReader(reader);
-            }
-
-            return null;
+            bird.Id = id;
+            var updatedBird = db.QuerySingleOrDefault<Bird>(sql, bird);
+            return updatedBird;
         }
 
         internal void Add(Bird newBird)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var db = new SqlConnection(_connectionString);
 
-            connection.Open();
-
-            var command = connection.CreateCommand();
-            command.CommandText = @"insert into birds(Type,Color,Size,Name)
+            var sql = @"insert into birds(Type,Color,Size,Name)
                                     output inserted.Id
                                     values(@Type, @Color, @Size, @Name)";
 
-            command.Parameters.AddWithValue("Type", newBird.Type);
-            command.Parameters.AddWithValue("Color", newBird.Color);
-            command.Parameters.AddWithValue("Size", newBird.Size);
-            command.Parameters.AddWithValue("Name", newBird.Name);
+            var id = db.ExecuteScalar<Guid>(sql, newBird);
+            newBird.Id = id;
 
-            //execute query but not care about results just number of rows
-            //var numberOfRowsAffected = command.ExecuteNonQuery();
-
-            var newId = (Guid)command.ExecuteScalar();
-
-            newBird.Id = newId;
         }
 
         internal Bird GetById(Guid birdId)
         {
-            using var connection = new SqlConnection(_connectionString);
-            //open the connection
-            connection.Open();
+            using var db = new SqlConnection(_connectionString);
 
-            //tell sql what we wnt to do
-            var command = connection.CreateCommand();
-            command.CommandText = @"select *
-                                    from Birds
-                                     where id = @id";
+            var birdQuery = @"select *
+                      from Birds
+                      where id = @id";
 
-            command.Parameters.AddWithValue("id", birdId);
+            var bird = db.QueryFirstOrDefault<Bird>(birdQuery, new {id = birdId} );
 
-            var reader = command.ExecuteReader();
+            if (bird == null) return null;
 
-            if (reader.Read())
-            {
+            var accessoriesQuery = @"select * from BirdAccessories where birdId = @birdId";
 
-                return MapFromReader(reader);
-            }
+            var accessories = db.Query<BirdAccessory>(accessoriesQuery, new { birdId });
 
-            return null;
-
-            //return _birds.FirstOrDefault(bird => bird.Id == birdId);
-        }
-
-        Bird MapFromReader(SqlDataReader reader)
-        {
-            var bird = new Bird();
-            bird.Id = reader.GetGuid(0);
-            bird.Color = reader["Color"].ToString();
-            bird.Size = reader["Size"].ToString();
-            bird.Type = (BirdType)reader["Type"];
-            bird.Name = reader["Name"].ToString();
+            bird.Accessories = accessories;
 
             return bird;
         }

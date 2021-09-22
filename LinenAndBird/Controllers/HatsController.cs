@@ -16,9 +16,9 @@ namespace LinenAndBird.Controllers
 
         HatRepository _repo;
 
-        public HatsController()
+        public HatsController(HatRepository repo)
         {
-            _repo = new HatRepository();
+            _repo = repo;
         }
 
         [HttpGet]

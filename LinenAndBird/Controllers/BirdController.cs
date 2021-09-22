@@ -2,6 +2,7 @@
 using LinenAndBird.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,14 +15,23 @@ namespace LinenAndBird.Controllers
     public class BirdController : ControllerBase
     {
         BirdRepository _repo;
-        public BirdController()
+
+        //ask asp.net for the application config
+        //dependency injection
+        public BirdController(BirdRepository repo)
         {
-            _repo = new BirdRepository();
+            _repo = repo;
         }
         [HttpGet]
         public IActionResult GetAllBirds()
         {
             return Ok(_repo.GetAll());
+        }
+
+        [HttpGet("{id}")]
+        public IActionResult GetSingleBird(Guid birdId)
+        {
+            return Ok(_repo.GetById(birdId));
         }
 
         [HttpPost]

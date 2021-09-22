@@ -17,12 +17,31 @@ namespace LinenAndBird.Controllers
        HatRepository _hatRepo;
        OrdersRepository _orderRepo;
 
-        public OrdersController()
+        public OrdersController(BirdRepository birdRepo, HatRepository hatRepo, OrdersRepository ordersRepo)
         {
-            _birdRepo = new BirdRepository();
-            _hatRepo = new HatRepository();
-            _orderRepo = new OrdersRepository();
+            _birdRepo = birdRepo;
+            _hatRepo = hatRepo;
+            _orderRepo = ordersRepo;
         }
+
+        [HttpGet]
+        public IActionResult GetAllOrders()
+        {
+            return Ok(_orderRepo.GetAll());
+        }
+
+        [HttpGet("{id}")]
+        public IActionResult GetOrderById(Guid id)
+        {
+            Order order = _orderRepo.Get(id);
+            if (order == null)
+            {
+                return NotFound("No Order exists with that id");
+            }
+
+            return Ok(order);
+        }
+
         [HttpPost]
         public IActionResult CreateOrder(CreateOrderCommand command)
         {
