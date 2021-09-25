@@ -22,9 +22,9 @@ namespace LinenAndBird.Controllers
         }
 
         [HttpGet]
-        public List<Hat> GetAllHats()
+        public IActionResult GetAllHats()
         {
-            return _repo.GetAll();
+            return Ok(_repo.GetAll());
         }
 
         [HttpGet("styles/{style}")] //whats inside curly braces needs to match the parameter

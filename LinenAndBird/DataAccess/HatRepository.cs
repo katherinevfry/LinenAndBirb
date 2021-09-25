@@ -29,133 +29,71 @@ namespace LinenAndBird.DataAccess
             return hat;
         }
 
-        internal Hat GetByStyle(HatStyle style)
+        internal IEnumerable<Hat> GetByStyle(HatStyle style)
         {
-            using var connection = new SqlConnection(_connectionString);
-            //open the connection
-            connection.Open();
+            using var db = new SqlConnection(_connectionString);
 
-            //tell sql what we wnt to do
-            var command = connection.CreateCommand();
-            command.CommandText = @"select *
+           var sql= @"select *
                                     from Hats
                                      where style = @style";
 
-            command.Parameters.AddWithValue("style", style);
+            var hat = db.Query<Hat>(sql, new { style });
 
-            var reader = command.ExecuteReader();
-
-            if (reader.Read())
-            {
-
-                return MapFromReader(reader);
-            }
-            return null;
-            //return _hats.Where(hat => hat.Style == style);
+            return hat;
         }
 
-        internal List<Hat> GetAll() //internal means it can be used anywhere within this project
+        internal IEnumerable<Hat> GetAll() //internal means it can be used anywhere within this project
         {
-            using var connection = new SqlConnection(_connectionString);
-            //open the connection
-            connection.Open();
+            using var db = new SqlConnection(_connectionString);
 
-            //tell sql what we wnt to do
-            var command = connection.CreateCommand();
-            command.CommandText = @"select *
-                                    from Hats";
+            var sql = @"select * from hats";
 
-            //execute reader is for when we care about getting all the query results
-            var reader = command.ExecuteReader();
-
-            //store the birds
-            var hats = new List<Hat>();
-
-            //
-            while (reader.Read())
-            {
-                var hat = MapFromReader(reader);
-                hats.Add(hat);
-            }
+            var hats = db.Query<Hat>(sql);
 
             return hats;
+           
         }
 
         internal void Add(Hat newHat)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var db = new SqlConnection(_connectionString);
 
-            connection.Open();
-
-            var command = connection.CreateCommand();
-            command.CommandText = @"insert into hats(Color,Designer,Style)
+           var sql = @"insert into hats(Color,Designer,Style)
                                     output inserted.Id
                                     values(@Color, @Designer, @Style)";
 
-            command.Parameters.AddWithValue("Color", newHat.Color);
-            command.Parameters.AddWithValue("Designer", newHat.Designer);
-            command.Parameters.AddWithValue("Style", newHat.Style);
+            var id = db.ExecuteScalar<Guid>(sql, newHat);
 
-            //execute query but not care about results just number of rows
-            //var numberOfRowsAffected = command.ExecuteNonQuery();
+            newHat.Id = id;
 
-            var newId = (Guid)command.ExecuteScalar();
-
-            newHat.Id = newId;
         }
 
         internal void Remove(Guid id)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var db = new SqlConnection(_connectionString);
 
-            connection.Open();
+            var sql = @"Delete From Hats Where Id = @id";
 
-            var command = connection.CreateCommand();
-            command.CommandText = @"Delete From Hats Where Id = @id";
+            db.Execute(sql, new { id });
 
-            command.Parameters.AddWithValue("id", id);
-
-            command.ExecuteNonQuery();
         }
 
         internal Hat Update(Guid id, Hat hat)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var db = new SqlConnection(_connectionString);
 
-            connection.Open();
-
-            var command = connection.CreateCommand();
-            command.CommandText = @"update Hats Set
+            var sql = @"update Hats Set
                                      Color = @color, Designer = @designer, Style = @style
                                         output inserted.*
                                       Where id = @id";
 
-            command.Parameters.AddWithValue("Color", hat.Color);
-            command.Parameters.AddWithValue("Designer", hat.Designer);
-            command.Parameters.AddWithValue("Style", hat.Style);
-            command.Parameters.AddWithValue("id", hat.Id);
+            hat.Id = id;
+            var updatedHat = db.QuerySingleOrDefault<Hat>(sql, hat);
+            return updatedHat;
 
-            var reader = command.ExecuteReader();
 
-            if (reader.Read())
-            {
-
-                return MapFromReader(reader);
-            }
-
-            return null;
         }
 
-        Hat MapFromReader(SqlDataReader reader)
-        {
-            var hat = new Hat();
-            hat.Id = reader.GetGuid(0);
-            hat.Color = reader["Color"].ToString();
-            hat.Designer = reader["Designer"].ToString();
-            hat.Style = (HatStyle)reader["Style"];
-    
-            return hat;
-        }
     }
 
 }
