@@ -32,7 +32,7 @@ namespace LinenAndBird
 
             //we need to register EVERY repo as transient. 
             services.AddTransient<BirdRepository>(); //give them a NEW copy. this is the one that typically gets used for things that aren't connections
-            services.AddTransient<HatRepository>();
+            services.AddTransient<IHatRepository, HatRepository>();
             services.AddTransient<OrdersRepository>();
 
             services.AddControllers();

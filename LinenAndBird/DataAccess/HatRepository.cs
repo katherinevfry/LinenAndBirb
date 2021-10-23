@@ -9,14 +9,14 @@ using Microsoft.Extensions.Configuration;
 
 namespace LinenAndBird.DataAccess
 {
-    public class HatRepository
+    public class HatRepository : IHatRepository
     {
         readonly string _connectionString;
         public HatRepository(IConfiguration config)
         {
             _connectionString = config.GetConnectionString("LinenAndBird");
         }
-        internal Hat GetById(Guid hatId)
+        public Hat GetById(Guid hatId)
         {
             using var db = new SqlConnection(_connectionString);
 
@@ -29,7 +29,7 @@ namespace LinenAndBird.DataAccess
             return hat;
         }
 
-        internal IEnumerable<Hat> GetByStyle(HatStyle style)
+        public IEnumerable<Hat> GetByStyle(HatStyle style)
         {
             using var db = new SqlConnection(_connectionString);
 
@@ -42,7 +42,7 @@ namespace LinenAndBird.DataAccess
             return hat;
         }
 
-        internal IEnumerable<Hat> GetAll() //internal means it can be used anywhere within this project
+        public IEnumerable<Hat> GetAll() //internal means it can be used anywhere within this project
         {
             using var db = new SqlConnection(_connectionString);
 
@@ -54,7 +54,7 @@ namespace LinenAndBird.DataAccess
            
         }
 
-        internal void Add(Hat newHat)
+        public void Add(Hat newHat)
         {
             using var db = new SqlConnection(_connectionString);
 
@@ -68,7 +68,7 @@ namespace LinenAndBird.DataAccess
 
         }
 
-        internal void Remove(Guid id)
+        public void Remove(Guid id)
         {
             using var db = new SqlConnection(_connectionString);
 
@@ -78,7 +78,7 @@ namespace LinenAndBird.DataAccess
 
         }
 
-        internal Hat Update(Guid id, Hat hat)
+        public Hat Update(Guid id, Hat hat)
         {
             using var db = new SqlConnection(_connectionString);
 

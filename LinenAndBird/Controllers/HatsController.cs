@@ -15,10 +15,10 @@ namespace LinenAndBird.Controllers
     {
 
         HatRepository _repo;
-
-        public HatsController(HatRepository repo)
+        //taking a dependency on an interface rather than a concrete class has dvantages
+        public HatsController(IHatRepository repo)
         {
-            _repo = repo;
+            _repo = (HatRepository)repo;
         }
 
         [HttpGet]
